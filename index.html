@@ -809,9 +809,14 @@
     }
 
     .section textarea {
+      display: block;
       width: 100%;
       min-height: 56px;
-      overflow: hidden;
+      height: auto;
+      max-height: none;
+      field-sizing: content;
+      overflow-x: hidden;
+      overflow-y: hidden !important;
       border: 0;
       border-radius: 6px;
       padding: 2px;
@@ -1328,6 +1333,7 @@
       processingView.classList.toggle("visible", view === "processing");
       resultView.classList.toggle("visible", view === "result");
       document.getElementById("newButton").classList.toggle("visible", view === "result");
+      if (view === "result") scheduleTextareaResize();
     }
 
     function updateTimer() {
@@ -1520,12 +1526,21 @@
     }
 
     function resizeTextarea(textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = `${Math.max(56, textarea.scrollHeight)}px`;
+      if (!textarea.offsetParent) return;
+      textarea.style.height = "1px";
+      textarea.style.height = `${Math.max(56, textarea.scrollHeight + 2)}px`;
+      textarea.style.overflowY = "hidden";
     }
 
     function resizeAllTextareas() {
       document.querySelectorAll(".section textarea").forEach(resizeTextarea);
+    }
+
+    function scheduleTextareaResize() {
+      requestAnimationFrame(() => {
+        resizeAllTextareas();
+        requestAnimationFrame(resizeAllTextareas);
+      });
     }
 
     function buildPrompt() {
@@ -1742,7 +1757,6 @@ Return exactly these keys:
       document.getElementById("systemicExamination").value = data.systemicExamination || "NIL";
       document.getElementById("provisionalDiagnosis").value = data.provisionalDiagnosis || "Generated provisional diagnosis will appear here.";
       document.getElementById("treatmentPlan").value = data.treatmentPlan || "Generated treatment plan will appear here.";
-      resizeAllTextareas();
     }
 
     function resetScribe() {
@@ -1898,6 +1912,7 @@ Return exactly these keys:
     document.querySelectorAll(".section textarea").forEach(textarea => {
       textarea.addEventListener("input", () => resizeTextarea(textarea));
     });
+    window.addEventListener("resize", scheduleTextareaResize);
     document.getElementById("saveKeyButton").addEventListener("click", () => {
       const key = keyInput.value.trim();
       if (!key) {
@@ -1922,7 +1937,7 @@ Return exactly these keys:
       event.currentTarget.setAttribute("aria-label", event.currentTarget.title);
     });
     setIdleControls();
-    resizeAllTextareas();
+    scheduleTextareaResize();
     initializeDeviceApproval();
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
